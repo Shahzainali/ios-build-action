@@ -1,4 +1,4 @@
-name: "Build iOS Action"
+name: "Build iOS Action With Network Extension"
 author: "SparkFabrik"
 branding:
   icon: "smartphone"
