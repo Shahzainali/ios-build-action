@@ -18,7 +18,8 @@ platform :ios do
     ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = "true"
     build_app(
       project: ENV['PROJECT_PATH']
-      scheme: "AmneziaVPN")
+      scheme: "AmneziaVPN"
+      )
     upload_to_testflight
  end
 end
