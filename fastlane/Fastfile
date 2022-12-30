@@ -16,7 +16,9 @@ platform :ios do
          ENV['NE_ID']
       ])
     ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = "true"
-    build_app(scheme: "AmneziaVPN")
+    build_app(
+       project: !use_workspace ? ENV['PROJECT_PATH'] : nil,
+      scheme: "AmneziaVPN")
     upload_to_testflight
  end
 end
