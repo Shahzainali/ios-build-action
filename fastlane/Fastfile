@@ -15,7 +15,6 @@ platform :ios do
          ENV['IOS_APP_ID'], 
          ENV['NE_ID']
       ])
-    sync_certs
     ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = "true"
     build_app(scheme: "AmneziaVPN")
     upload_to_testflight
