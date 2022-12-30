@@ -59,6 +59,7 @@ platform :ios do
       export_team_id: ENV['TEAM_ID'],
       silent: true,
       include_bitcode: true,
+      xcodebuild_command: 'xcodebuild --bootstrapping=off'
     )
 
     if ENV["BROWSERSTACK_UPLOAD"] == 'true'
