@@ -1,89 +1,149 @@
 default_platform(:ios)
-xcversion(version: "13.4")
+
+setup_ci
+sync_certs
 
 platform :ios do
-  before_all do
-    keychain_password = '12345678'
-
-    create_keychain(
-      name: "ios-build.keychain",
-      password: keychain_password,
-      default_keychain: true,
-      unlock: true,
-      timeout: 3600
-    )
-
-    if ENV["BUILD_PODS"] == 'true'
-      cocoapods(
-        podfile: ENV["PODS_PATH"],
-        use_bundle_exec: false
-      )
-    end
-  end
-
-  desc "Build"
-  lane :build do
-    api_key = app_store_connect_api_key(
+ desc "Push a new beta build to TestFlight"
+ lane :build do
+  api_key = app_store_connect_api_key(
       key_id: ENV['APPLE_KEY_ID'],
       issuer_id: ENV['APPLE_KEY_ISSUER_ID'],
       key_content: ENV['APPLE_KEY_CONTENT'],
       in_house: false # optional but may be required if using match/sigh
     )
-
-    use_workspace = !ENV['WORKSPACE_PATH'].empty?
-    match(type: ENV['MATCH_BUILD_TYPE'], api_key: api_key, app_identifier: [
+  match(type: ENV['MATCH_BUILD_TYPE'], api_key: api_key, app_identifier: [
          ENV['IOS_APP_ID'], 
          ENV['NE_ID']
       ])
-
-    if ENV['INCREMENT_BUILD_NUMBER'] == 'true'
-      increment_build_number(
-        xcodeproj: ENV['PROJECT_PATH'],
-        build_number: (latest_testflight_build_number(
-          app_identifier: ENV["IOS_APP_ID"],
-          api_key: api_key,
-          team_name: ENV["TEAM_NAME"],
-        ) + 1).to_s,
-      )
-    end
-
-    build_app(
-      workspace: use_workspace ? ENV['WORKSPACE_PATH'] : nil,
-      project: !use_workspace ? ENV['PROJECT_PATH'] : nil,
-      scheme: ENV['SCHEME'],
-      output_directory: File.dirname(ENV['OUTPUT_PATH']),
-      output_name: File.basename(ENV['OUTPUT_PATH']),
-      clean: true,
-      export_method: ENV['EXPORT_METHOD'],
-      export_team_id: ENV['TEAM_ID'],
-      silent: true,
-      include_bitcode: true,
-      xcodebuild_command: 'xcodebuild --bootstrapping=off'
-    )
-
-    if ENV["BROWSERSTACK_UPLOAD"] == 'true'
-      upload_to_browserstack_app_live(
-        browserstack_username: ENV["BROWSERSTACK_USERNAME"],
-        browserstack_access_key: ENV["BROWSERSTACK_ACCESS_KEY"],
-        file_path: ENV["OUTPUT_PATH"]
-      )
-    end
-
-    if ENV["TESTFLIGHT_UPLOAD"] == 'true'
-      upload_to_testflight(
-        ipa: File.join(File.dirname(ENV['OUTPUT_PATH']), File.basename(ENV['OUTPUT_PATH'])),
-        api_key: api_key,
-        app_identifier: ENV['IOS_APP_ID'],
-        team_name: ENV['TEAM_NAME'],
-        skip_waiting_for_build_processing: true,
-        skip_submission: true,
-      )
-    end
-  end
-
-  after_all do
-    delete_keychain(
-      name: "ios-build.keychain"
-    )
-  end
+   ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = "true"
+   build_app(scheme: "AmneziaVPN")
+   upload_to_testflight
+ end
 end
+
+# platform :ios do
+#   before_all do
+#     keychain_password = '12345678'
+
+#     create_keychain(
+#       name: "ios-build.keychain",
+#       password: keychain_password,
+#       default_keychain: true,
+#       unlock: true,
+#       timeout: 3600
+#     )
+
+#     if ENV["BUILD_PODS"] == 'true'
+#       cocoapods(
+#         podfile: ENV["PODS_PATH"],
+#         use_bundle_exec: false
+#       )
+#     end
+#   end
+
+#   desc "Build"
+#   lane :build do
+#     api_key = app_store_connect_api_key(
+#       key_id: ENV['APPLE_KEY_ID'],
+#       issuer_id: ENV['APPLE_KEY_ISSUER_ID'],
+#       key_content: ENV['APPLE_KEY_CONTENT'],
+#       in_house: false # optional but may be required if using match/sigh
+#     )
+
+#     use_workspace = !ENV['WORKSPACE_PATH'].empty?
+#     match(type: ENV['MATCH_BUILD_TYPE'], api_key: api_key, app_identifier: [
+#          ENV['IOS_APP_ID'], 
+#          ENV['NE_ID']
+#       ])
+
+#     if ENV['INCREMENT_BUILD_NUMBER'] == 'true'
+#       increment_build_number(
+#         xcodeproj: ENV['PROJECT_PATH'],
+#         build_number: (latest_testflight_build_number(
+#           app_identifier: ENV["IOS_APP_ID"],
+#           api_key: api_key,
+#           team_name: ENV["TEAM_NAME"],
+#         ) + 1).to_s,
+#       )
+#     end
+
+#     build_app(
+#       workspace: use_workspace ? ENV['WORKSPACE_PATH'] : nil,
+#       project: !use_workspace ? ENV['PROJECT_PATH'] : nil,
+#       scheme: ENV['SCHEME'],
+#       output_directory: File.dirname(ENV['OUTPUT_PATH']),
+#       output_name: File.basename(ENV['OUTPUT_PATH']),
+#       clean: true,
+#       export_method: ENV['EXPORT_METHOD'],
+#       export_team_id: ENV['TEAM_ID'],
+#       silent: true,
+#       include_bitcode: true,
+#       xcodebuild_command: 'xcodebuild --bootstrapping=off'
+#     )
+
+#     if ENV["BROWSERSTACK_UPLOAD"] == 'true'
+#       upload_to_browserstack_app_live(
+#         browserstack_username: ENV["BROWSERSTACK_USERNAME"],
+#         browserstack_access_key: ENV["BROWSERSTACK_ACCESS_KEY"],
+#         file_path: ENV["OUTPUT_PATH"]
+#       )
+#     end
+
+#     if ENV["TESTFLIGHT_UPLOAD"] == 'true'
+#       upload_to_testflight(
+#         ipa: File.join(File.dirname(ENV['OUTPUT_PATH']), File.basename(ENV['OUTPUT_PATH'])),
+#         api_key: api_key,
+#         app_identifier: ENV['IOS_APP_ID'],
+#         team_name: ENV['TEAM_NAME'],
+#         skip_waiting_for_build_processing: true,
+#         skip_submission: true,
+#       )
+#     end
+#   end
+
+#   after_all do
+#     delete_keychain(
+#       name: "ios-build.keychain"
+#     )
+#   end
+# end
+
+
+# # This file contains the fastlane.tools configuration
+# # You can find the documentation at https://docs.fastlane.tools
+# #
+# # For a list of all available actions, check out
+# #
+# #     https://docs.fastlane.tools/actions
+# #
+# # For a list of all available plugins, check out
+# #
+# #     https://docs.fastlane.tools/plugins/available-plugins
+# #
+
+# # Uncomment the line if you want fastlane to automatically update itself
+# # update_fastlane
+
+# #default_platform(:ios)
+
+# #platform :ios do
+# #  desc "Push a new beta build to TestFlight"
+# #  lane :beta do
+# #    ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = "true"
+# #    build_app(scheme: "AmneziaVPN")
+# #    upload_to_testflight
+# #  end
+# #end
+
+# app_store_connect_api_key
+
+# lane :release do
+#     ENV['ITMSTRANSPORTER_FORCE_ITMS_PACKAGE_UPLOAD'] = "true"
+#   if is_ci
+#     setup_ci
+#   end
+#   sync_certs
+#   build_app(scheme: "AmneziaVPN")
+#   upload_to_testflight
+# end
